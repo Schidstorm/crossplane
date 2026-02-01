@@ -22,7 +22,7 @@ spec:
             metadata:
               name: {{ `{{ .observed.composite.resource.metadata.name }}` }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: bucket
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.metadata.name }}-bucket
                 crossplane.io/external-name: {{ `{{ .observed.composite.resource.spec.bucketName }}` }}
               labels:
                 crossplane.io/composite: {{ `{{ .observed.composite.resource.metadata.name }}` }}
@@ -30,12 +30,42 @@ spec:
               forProvider:
                 source: Inline
                 module: |
-{{- range $path, $_ := .Files.Glob "terraform/bucket/**.tf" }}
-{{ $.Files.Get $path | indent 18 }}
-{{- end }}
+                  {{- range $path, $_ := .Files.Glob "terraform/bucket/**.tf" }}
+                  {{ $.Files.Get $path | nindent 18 }}
+                  {{- end }}
                 vars:
                   - key: bucket_name
                     value: {{ `{{ .observed.composite.resource.spec.bucketName }}` }}
+                  - key: region
+                    value: {{ `{{ .observed.composite.resource.spec.region }}` }}
+    - step: create-a-bucket-2
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: opentofu.upbound.io/v1beta1
+            kind: Workspace
+            metadata:
+              name: {{ `{{ .observed.composite.resource.metadata.name }}` }}-2
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.metadata.name }}-bucket
+                crossplane.io/external-name: {{ `{{ .observed.composite.resource.spec.bucketName }}` }}-2
+              labels:
+                crossplane.io/composite: {{ `{{ .observed.composite.resource.metadata.name }}` }}-2
+            spec:
+              forProvider:
+                source: Inline
+                module: |
+                  {{- range $path, $_ := .Files.Glob "terraform/bucket/**.tf" }}
+                  {{ $.Files.Get $path | nindent 18 }}
+                  {{- end }}
+                vars:
+                  - key: bucket_name
+                    value: {{ `{{ .observed.composite.resource.spec.bucketName }}` }}-2
                   - key: region
                     value: {{ `{{ .observed.composite.resource.spec.region }}` }}
     - step: automatically-detect-ready-composed-resources
