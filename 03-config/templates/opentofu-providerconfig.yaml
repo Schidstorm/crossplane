@@ -1,0 +1,13 @@
+apiVersion: opentofu.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  credentials:
+    - filename: credentials
+      source: Secret
+      secretRef:
+        namespace: crossplane-system
+        name: aws-creds
+        key: credentials
+  pluginCache: true

@@ -1,0 +1,43 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: bucket-terraform-go
+spec:
+  compositeTypeRef:
+    apiVersion: storage.example.org/v1alpha1
+    kind: Bucket
+  mode: Pipeline
+  pipeline:
+    - step: create-a-bucket
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: opentofu.upbound.io/v1beta1
+            kind: Workspace
+            metadata:
+              name: {{ `{{ .observed.composite.resource.metadata.name }}` }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: bucket
+                crossplane.io/external-name: {{ `{{ .observed.composite.resource.spec.bucketName }}` }}
+              labels:
+                crossplane.io/composite: {{ `{{ .observed.composite.resource.metadata.name }}` }}
+            spec:
+              forProvider:
+                source: Inline
+                module: |
+{{- range $path, $_ := .Files.Glob "terraform/bucket/**.tf" }}
+{{ $.Files.Get $path | indent 18 }}
+{{- end }}
+                vars:
+                  - key: bucket_name
+                    value: {{ `{{ .observed.composite.resource.spec.bucketName }}` }}
+                  - key: region
+                    value: {{ `{{ .observed.composite.resource.spec.region }}` }}
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

@@ -1,0 +1,7 @@
+apiVersion: storage.example.org/v1alpha1
+kind: Bucket
+metadata:
+  name: test-bucket
+spec:
+  bucketName: test-bucket-pyxcnwquzkfkdmfsk
+  region: eu-central-1
